@@ -1,1 +1,388 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { 
+  Car, 
+  ChevronRight,
+  Play,
+  Check,
+  Dices,
+  Printer
+} from 'lucide-react';
 
+// --- ELEMENTY DO LOSOWANIA (Tabela nr 3, poz. 1) ---
+const PREP_GROUP_1 = [
+  { id: 'p_oil', name: 'Poziom oleju silnikowego' },
+  { id: 'p_coolant', name: 'Poziom płynu chłodzącego' },
+  { id: 'p_brake', name: 'Poziom płynu hamulcowego' },
+  { id: 'p_washer', name: 'Obecność płynu w spryskiwaczach' },
+  { id: 'p_horn', name: 'Działanie sygnału dźwiękowego' }
+];
+
+const PREP_GROUP_2 = [
+  { id: 'l_pos', name: 'Światła pozycyjne' },
+  { id: 'l_low', name: 'Światła mijania' },
+  { id: 'l_high', name: 'Światła drogowe' },
+  { id: 'l_ind', name: 'Światła kierunkowskazów' },
+  { id: 'l_stop', name: 'Światła hamowania "STOP"' },
+  { id: 'l_rev', name: 'Światła cofania' },
+  { id: 'l_haz', name: 'Światła awaryjne' },
+  { id: 'l_fog', name: 'Światła przeciwmgłowe tylne' }
+];
+
+// --- POZOSTAŁE ZADANIA PLAC (KAT. B) ---
+const YARD_TASKS_REMAINING = [
+  { id: 'y_prep_logic', name: 'Właściwe ustawienie fotela, lusterek, zagłówka i zapięcie pasów', label: '1c' },
+  { id: 'y2', name: 'Ruszanie z miejsca oraz jazda pasem ruchu do przodu i do tyłu', label: '2' },
+  { id: 'y3', name: 'Parkowanie skośne (wjazd przodem - wyjazd tyłem)', label: '3' },
+  { id: 'y41', name: 'Parkowanie prostopadłe (wjazd tyłem - wyjazd przodem)', label: '4.1' },
+  { id: 'y42', name: 'Parkowanie prostopadłe (wjazd tyłem - wyjazd przodem)', label: '4.2' },
+  { id: 'y6', name: 'Ruszanie z miejsca do przodu na wzniesieniu', label: '6' }
+];
+
+const ROAD_TASKS_OFFICIAL = [
+  { id: 'r1', name: 'Włączanie się do ruchu', label: '1' },
+  { id: 'r2', name: 'Jazda drogami dwukierunkowymi jednojezdniowymi', label: '2' },
+  { id: 'r3', name: 'Jazda drogami dwukierunkowymi dwujezdniowymi', label: '3' },
+  { id: 'r4', name: 'Jazda drogami jednokierunkowymi', label: '4' },
+  { id: 'r5', name: 'Jazda przez skrzyżowania równorzędne (trzy- i czterowlotowe)', label: '5' },
+  { id: 'r6', name: 'Przejazd przez skrzyżowania oznakowane znakami ustalającymi pierwszeństwo przejazdu', label: '6' },
+  { id: 'r7', name: 'Przejazd przez skrzyżowania z sygnalizacją świetlną', label: '7' },
+  { id: 'r8', name: 'Przejazd przez skrzyżowania, na których ruch odbywa się wokół wyspy', label: '8' },
+  { id: 'r9', name: 'Przejazd przez skrzyżowania dwupoziomowe', label: '9' },
+  { id: 'r10', name: 'Przejazd przez przejścia dla pieszych', label: '10' },
+  { id: 'r11a', name: 'Parkowanie skośne (wjazd przodem - wyjazd tyłem)', label: '11a' },
+  { id: 'r11b', name: 'Parkowanie prostopadłe (wjazd tyłem - wyjazd przodem)', label: '11b' },
+  { id: 'r11c', name: 'Parkowanie równoległe (wjazd przodem - wyjazd przodem)', label: '11c' },
+  { id: 'r12', name: 'Zawracanie', label: '12' },
+  { id: 'r13', name: 'Przejazd przez torowisko tramwajowe i kolejowe', label: '13' },
+  { id: 'r14', name: 'Przejazd przez tunel', label: '14' },
+  { id: 'r15', name: 'Przejazd obok przystanku tramwajowego i autobusowego', label: '15' },
+  { id: 'r16', name: 'Wyprzedzanie', label: '16' },
+  { id: 'r17', name: 'Omijanie', label: '17' },
+  { id: 'r18', name: 'Wymijanie', label: '18' },
+  { id: 'r19', name: 'Zmiana pasa ruchu', label: '19' },
+  { id: 'r20', name: 'Zmiana kierunku jazdy w prawo', label: '20' },
+  { id: 'r21', name: 'Zmiana kierunku jazdy w lewo', label: '21' },
+  { id: 'r22', name: 'Zawracanie na skrzyżowaniu', label: '22' },
+  { id: 'r23', name: 'Hamowanie do zatrzymania we wskazanym miejscu', label: '23' },
+  { id: 'r24', name: 'Hamowanie awaryjne', label: '24' },
+  { id: 'r25', name: 'Rozprzęganie', label: '25' },
+  { id: 'r26', name: 'Właściwa zmiana biegów - jazda energooszczędna', label: '26' },
+  { id: 'r27', name: 'Hamowanie silnikiem przy zatrzymaniu i zwalnianiu - jazda energooszczędna', label: '27' },
+  { id: 'r28', name: 'Przekroczenie dopuszczalnej prędkości', label: '28' },
+  { id: 'r29', name: 'Zachowanie w odniesieniu do znaków poziomych', label: '29' },
+  { id: 'r30', name: 'Zachowanie w odniesieniu do znaków pionowych', label: '30' },
+  { id: 'r31', name: 'Zachowanie w odniesieniu do sygnałów świetlnych', label: '31' },
+  { id: 'r32', name: 'Zachowanie w odniesieniu do poleceń osoby kierującej ruchem', label: '32' },
+  { id: 'r33', name: 'Zachowanie w odniesieniu do innych uczestników ruchu', label: '33' },
+  { id: 'r34', name: 'Respektowanie zasad techniki kierowania pojazdami', label: '34' }
+];
+
+export default function App() {
+  const [screen, setScreen] = useState('intro');
+  const [formData, setFormData] = useState({
+    name: 'TOMASZ ZAJĄC',
+    pkk: 'PL/14/2024/0012348',
+    pesel: '78112934567',
+    examiner: 'RAFAŁ MATUSZEWSKI',
+    word: 'WORD WARSZAWA',
+    date: '08.04.2026',
+    timeStart: '18:41',
+    includeHp: true
+  });
+
+  const [drawResult, setDrawResult] = useState({ item1: null, item2: null });
+  const [scores, setScores] = useState({});
+  const [hpState, setHpState] = useState({ currentIndex: 0, results: [], currentHits: [], videoTime: 0, isPlaying: false });
+  const [verdict, setVerdict] = useState('POZYTYWNY');
+  
+  const canvasRef = useRef(null);
+
+  // --- HOOKS LOGIC ---
+  useEffect(() => {
+    if (screen !== 'hp' || !hpState.isPlaying) return;
+    const t = setInterval(() => {
+      setHpState(prev => {
+        const nextTime = prev.videoTime + 0.1;
+        if (nextTime >= 5) {
+          clearInterval(t);
+          setTimeout(() => {
+            const best = prev.currentHits.length > 0 ? Math.max(...prev.currentHits.map(h => h.pts)) : 0;
+            const nextIdx = prev.currentIndex + 1;
+            if (nextIdx < 5) {
+              setHpState(p => ({...p, currentIndex: nextIdx, results: [...p.results, best], currentHits: [], videoTime: 0, isPlaying: true}));
+            } else {
+              setHpState(p => ({...p, results: [...p.results, best], isPlaying: false}));
+              setScreen('yard');
+            }
+          }, 600);
+          return { ...prev, videoTime: 5, isPlaying: false };
+        }
+        return { ...prev, videoTime: nextTime };
+      });
+    }, 100);
+    return () => clearInterval(t);
+  }, [screen, hpState.isPlaying]);
+
+  const performDraw = () => {
+    const i1 = PREP_GROUP_1[Math.floor(Math.random() * PREP_GROUP_1.length)];
+    const i2 = PREP_GROUP_2[Math.floor(Math.random() * PREP_GROUP_2.length)];
+    setDrawResult({ item1: i1, item2: i2 });
+  };
+
+  const updateScore = (id, delta) => {
+    const current = scores[id] || { errors: 0, done: false };
+    const nextErrors = Math.max(0, current.errors + delta);
+    const nextData = { errors: nextErrors, done: nextErrors > 0 ? false : current.done };
+    const newScores = { ...scores, [id]: nextData };
+    setScores(newScores);
+    const anyFail = Object.values(newScores).some(v => v.errors >= 2);
+    setVerdict(anyFail ? 'NEGATYWNY' : 'POZYTYWNY');
+  };
+
+  const toggleTask = (id) => {
+    const current = scores[id] || { errors: 0, done: false };
+    if (current.errors > 0) return;
+    setScores({ ...scores, [id]: { ...current, done: !current.done } });
+  };
+
+  const getOfficialTask1Score = () => {
+    const ids = [drawResult.item1?.id, drawResult.item2?.id, 'y_prep_logic'];
+    let maxErrors = 0;
+    let allDone = true;
+    ids.forEach(id => {
+      const s = scores[id] || { errors: 0, done: false };
+      if (s.errors > maxErrors) maxErrors = s.errors;
+      if (!s.done && s.errors === 0) allDone = false;
+    });
+    return { errors: maxErrors, done: allDone };
+  };
+
+  // --- PDF GENERATOR ---
+  const generatePDF = () => {
+    const sigData = canvasRef.current?.toDataURL() || '';
+    const hpSum = hpState.results.length > 0 ? hpState.results.reduce((a, b) => a + b, 0) : 11;
+    const isPos = verdict === 'POZYTYWNY';
+    const task1Aggregated = getOfficialTask1Score();
+
+    // Hand-drawn SVG symbols for human-like marking
+    const handX = `<svg viewBox="0 0 14 14" width="14" height="14" style="display:block;"><path d="M2 2 L12 12 M12 2 L2 12" stroke="#c0392b" stroke-width="2.5" stroke-linecap="round" fill="none"/></svg>`;
+    const handCheck = `<svg viewBox="0 0 14 14" width="16" height="16" style="display:block; margin-top:-2px;"><path d="M2 7 L5 11 L12 2" stroke="#1a6b3a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>`;
+
+    const renderOfficialCell = (scoreData) => {
+      const s = scoreData || { errors: 0, done: false };
+      const boxStyle = "display:inline-flex; align-items:center; justify-content:center; width:13px; height:13px; border:0.5pt solid #000; background:#fff; margin-left:2px;";
+      
+      return `
+        <div style="display:flex; align-items:center; justify-content:center; font-family:Arial, sans-serif;">
+          <span style="font-size:8.5pt; margin-right:1px; font-weight:bold;">1</span>
+          <div style="${boxStyle}">${s.errors >= 1 ? handX : ''}</div>
+          <span style="font-size:8.5pt; margin-left:4px; margin-right:1px; font-weight:bold;">2</span>
+          <div style="${boxStyle}">${s.errors >= 2 ? handX : ''}</div>
+          <div style="display:inline-flex; align-items:center; justify-content:center; width:15px; height:15px; border:0.6pt solid #000; margin-left:8px; background:#fff;">
+            ${s.done && s.errors === 0 ? handCheck : ''}
+          </div>
+        </div>
+      `;
+    };
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <style>
+          @page { size: A4; margin: 0; }
+          body { font-family: 'Arial', sans-serif; font-size: 8.2pt; color: #000; margin: 8mm; line-height: 1.15; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          table { width: 100%; border-collapse: collapse; }
+          .hdr-cell { border: 0.6pt solid #000; padding: 3px 6px; vertical-align: top; }
+          .title-doc { text-align: center; font-weight: bold; font-size: 10.5pt; padding: 7px 0; border-top: 1.8pt solid #000; margin-top: 4px; }
+          .col-hdr { background: #e0e0e0 !important; border: 0.6pt solid #000; padding: 2px; text-align: center; }
+          .task-row td { border: 0.6pt solid #000; padding: 2px 4px; height: 18px; vertical-align: middle; }
+          .task-num { width: 22px; text-align: center; font-weight: bold; }
+          .task-score { width: 95px; text-align: center; }
+          .result-box { border: 2.8pt solid ${isPos ? '#1a6b3a' : '#c0392b'}; color: ${isPos ? '#1a6b3a' : '#c0392b'}; padding: 8px 24px; font-size: 22pt; font-weight: 900; display: inline-block; text-transform: uppercase; margin-top: 8px; }
+          .stamp-area { width: 200px; text-align: center; position: relative; margin-top: 35px; }
+          .footer-line { font-size: 6.2pt; color: #111; margin-top: 6px; border-top: 0.4pt solid #000; padding-top: 3px; }
+          .hp-diag { border: 0.6pt solid #000; padding: 3px 5px; font-weight: bold; font-size: 7.8pt; margin: 4px 0; background: #fafafa; }
+        </style>
+      </head>
+      <body>
+        <table>
+          <tr>
+            <td class="hdr-cell" style="width:58%;">Nazwisko i imię osoby egzaminowanej<br><strong>${formData.name} ${formData.pesel}</strong></td>
+            <td class="hdr-cell">Data i godzina części praktycznej egzaminu państwowego<br><strong>${formData.date} / ${formData.timeStart}</strong></td>
+            <td class="hdr-cell" style="width:8%; text-align:center;">Kategoria<br><strong style="font-size:12pt;">B</strong></td>
+          </tr>
+          <tr>
+            <td class="hdr-cell">Godzina rozpoczęcia / zakończenia egzaminu<br><strong>${formData.timeStart} / ...</strong></td>
+            <td class="hdr-cell">Nr zestawu (nie dotyczy kat. AM, A1, A2, A, B, B1)<br><strong>—</strong></td>
+            <td class="hdr-cell" style="text-align:center;">WORD<br><strong style="font-size:7.5pt;">${formData.word}</strong></td>
+          </tr>
+        </table>
+
+        <div class="title-doc">ARKUSZ PRZEBIEGU CZĘŚCI PRAKTYCZNEJ EGZAMINU PAŃSTWOWEGO NA PRAWO JAZDY</div>
+
+        <div style="display:flex;">
+          <div style="flex:1; border-right: 0.3pt solid #000;">
+            <table>
+              <tr>
+                <td class="col-hdr" style="width:22px;">Poz.</td>
+                <td class="col-hdr">Plac manewrowy / ruch drogowy</td>
+                <td class="col-hdr" style="width:95px;">
+                  <div style="font-weight:bold; font-size:9.5pt; margin-bottom:1px;">Ocena</div>
+                  <div style="font-size:6.5pt; font-weight:normal; letter-spacing:0.2px;">N-neg. P-poz.</div>
+                </td>
+              </tr>
+              <tr class="task-row"><td class="task-num">1</td><td style="font-size:7.8pt;">Przygotowanie do jazdy</td><td class="task-score">${renderOfficialCell(task1Aggregated)}</td></tr>
+              <tr class="task-row"><td class="task-num">2</td><td style="font-size:7.8pt;">Ruszanie z miejsca oraz jazda pasem ruchu</td><td class="task-score">${renderOfficialCell(scores['y2'])}</td></tr>
+              <tr class="task-row"><td class="task-num">3</td><td style="font-size:7.8pt;">Parkowanie skośne (wjazd przodem - wyjazd tyłem)</td><td class="task-score">${renderOfficialCell(scores['y3'])}</td></tr>
+              <tr class="task-row"><td class="task-num">4.1</td><td style="font-size:7.8pt;">Parkowanie prostopadłe (wjazd tyłem - wyjazd przodem)</td><td class="task-score">${renderOfficialCell(scores['y41'])}</td></tr>
+              <tr class="task-row"><td class="task-num">4.2</td><td style="font-size:7.8pt;">Parkowanie prostopadłe (wjazd tyłem - wyjazd przodem)</td><td class="task-score">${renderOfficialCell(scores['y42'])}</td></tr>
+              <tr class="task-row"><td class="task-num">6</td><td style="font-size:7.8pt;">Ruszanie z miejsca do przodu na wzniesieniu</td><td class="task-score">${renderOfficialCell(scores['y6'])}</td></tr>
+              <tr><td colspan="3" class="col-hdr" style="text-align:left; padding-left:10px; font-size:7pt;">Ruch drogowy</td></tr>
+              ${ROAD_TASKS_OFFICIAL.slice(0, 12).map(t => `<tr class="task-row"><td class="task-num">${t.label}</td><td style="font-size:7.8pt;">${t.name}</td><td class="task-score">${renderOfficialCell(scores[t.id])}</td></tr>`).join('')}
+            </table>
+          </div>
+          <div style="flex:1;">
+            <table>
+              <tr>
+                <td class="col-hdr" style="width:22px;">Poz.</td>
+                <td class="col-hdr">Ruch drogowy</td>
+                <td class="col-hdr" style="width:95px;">
+                  <div style="font-weight:bold; font-size:9.5pt; margin-bottom:1px;">Ocena</div>
+                  <div style="font-size:6.5pt; font-weight:normal; letter-spacing:0.2px;">N-neg. P-poz.</div>
+                </td>
+              </tr>
+              ${ROAD_TASKS_OFFICIAL.slice(12).map(t => `<tr class="task-row"><td class="task-num">${t.label}</td><td style="font-size:7.8pt;">${t.name}</td><td class="task-score">${renderOfficialCell(scores[t.id])}</td></tr>`).join('')}
+            </table>
+          </div>
+        </div>
+
+        <div class="hp-diag">TEST HP (diagnostyczny): ${formData.includeHp ? `${hpSum}/30 pkt` : 'nie przeprowadzono'} — nie wpływa na wynik egzaminu</div>
+
+        <div style="display:flex; justify-content:space-between; margin-top:8px;">
+          <div style="flex:1;">
+            <strong>Uwagi:</strong><br>
+            <div style="min-height:35px; border-bottom:0.5pt dashed #666; width:95%; font-style:italic; font-size:7.5pt; margin-top:5px;">
+              Wylosowano: 1. ${drawResult.item1?.name}, 2. ${drawResult.item2?.name}. ${verdict === 'NEGATYWNY' ? 'Wynik negatywny.' : ''}
+            </div>
+            <div style="margin-top:12px;"><strong>Wynik egzaminu:</strong><br><div class="result-box">${verdict}</div></div>
+          </div>
+          <div style="display:flex; flex-direction:column; align-items:center; justify-content:flex-end;">
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=85x85&data=DRIVETAB-${formData.pesel}" style="width:82px; height:82px; border:0.6pt solid #000;" />
+            <div class="stamp-area">
+              ${sigData ? `<img src="${sigData}" style="max-height:60px; position:absolute; bottom:5px; left:50%; transform:translateX(-50%);" />` : ''}
+              <div style="border-top:0.6pt solid #000; font-size:6.8pt; padding-top:2px;">(podpis i pieczęć egzaminatora)</div>
+            </div>
+          </div>
+        </div>
+        <div class="footer-line">Nr PKK: ${formData.pkk} | Arkusz elektroniczny - Rozp. MI z dn. 24.11.2023 r. (Dz.U. poz. 2659) | DriveTab v2.4 | ${new Date().toLocaleString('pl-PL')}</div>
+      </body>
+      </html>
+    `;
+
+    const blob = new Blob([html], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const win = window.open(url, '_blank');
+    if (win) {
+      win.onload = () => {
+        setTimeout(() => { win.print(); URL.revokeObjectURL(url); }, 400);
+      };
+    }
+  };
+
+  // --- RENDER HELPERS ---
+  const renderTaskItem = (t) => {
+    const s = scores[t.id] || { errors: 0, done: false };
+    const isSpecial = t.id && (t.id.startsWith('p_') || t.id.startsWith('l_'));
+    return (
+      <div key={t.id || t.label} className={`p-3 rounded-xl border flex items-center gap-3 transition-all ${s.errors >= 2 ? 'bg-rose-500/10 border-rose-500/50' : s.done ? 'bg-emerald-500/10 border-emerald-500/50' : 'bg-slate-900 border-slate-800'}`}>
+        <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs ${s.errors > 0 ? 'bg-rose-500 text-white' : s.done ? 'bg-emerald-500 text-black' : 'bg-slate-800 text-slate-500'}`}>
+          {s.errors > 0 ? s.errors : s.done ? <Check size={12} strokeWidth={3} /> : '–'}
+        </div>
+        <div className="flex-1 cursor-pointer" onClick={() => toggleTask(t.id)}>
+          <h4 className={`text-xs font-bold ${isSpecial ? 'text-emerald-400' : 'text-slate-200'} leading-tight`}>{t.label && !isSpecial ? `${t.label}. ` : ''}{t.name}</h4>
+        </div>
+        <div className="flex gap-1">
+          <button onClick={() => updateScore(t.id, -1)} className="w-9 h-9 bg-slate-800 text-white rounded-lg active:scale-90 shadow-sm">-</button>
+          <button onClick={() => updateScore(t.id, 1)} className="w-9 h-9 bg-slate-800 text-white rounded-lg active:scale-90 shadow-sm">+</button>
+        </div>
+      </div>
+    );
+  };
+
+  // --- SCREEN RENDERING ---
+  if (screen === 'intro') return (
+    <div className="flex items-center justify-center min-h-screen bg-slate-950 p-6">
+      <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-2xl">
+        <div className="flex items-center gap-4 mb-8">
+          <div className="bg-emerald-400 p-3 rounded-xl text-black shadow-lg"><Car size={32} /></div>
+          <h1 className="text-3xl font-black text-white">DriveTab <span className="text-emerald-400">Pro</span></h1>
+        </div>
+        <div className="space-y-3 mb-8 text-xs font-medium text-slate-400 uppercase tracking-widest">
+          <div className="space-y-1"><label>Kandydat</label><input className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-white outline-none focus:border-emerald-500" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} /></div>
+          <div className="space-y-1"><label>Nr PKK</label><input className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-white outline-none focus:border-emerald-500" value={formData.pkk} onChange={e => setFormData({...formData, pkk: e.target.value})} /></div>
+          <div className="space-y-1"><label>PESEL</label><input className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-white outline-none focus:border-emerald-500" value={formData.pesel} onChange={e => setFormData({...formData, pesel: e.target.value})} /></div>
+          <div className="space-y-1">
+            <label>Tryb</label>
+            <select className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-white outline-none" value={formData.includeHp ? 'hp' : 'no_hp'} onChange={e => setFormData({...formData, includeHp: e.target.value === 'hp'})}>
+              <option value="hp">Tryb Urzędowy (z HP)</option>
+              <option value="no_hp">Skrócony (bez HP)</option>
+            </select>
+          </div>
+        </div>
+        <button onClick={() => { performDraw(); setHpState(p => ({...p, isPlaying: formData.includeHp})); setScreen(formData.includeHp ? 'hp' : 'yard'); }} className="w-full bg-emerald-400 text-black font-black p-5 rounded-2xl active:scale-95 shadow-xl uppercase">Rozpocznij</button>
+      </div>
+    </div>
+  );
+
+  if (screen === 'hp') return (
+    <div className="flex flex-col min-h-screen bg-black items-center justify-center cursor-pointer" onClick={() => setHpState(p => ({...p, currentHits: [...p.currentHits, {pts: 5}]}))}>
+      <div className="text-white/10 text-9xl font-black italic uppercase">Wideo {hpState.currentIndex+1}</div>
+      <div className="text-emerald-500 font-mono mt-4 uppercase">Klip Egzaminacyjny... {hpState.videoTime.toFixed(1)}s</div>
+      <div className="absolute bottom-10 text-white/40 text-[10px] uppercase tracking-widest animate-pulse">Kliknij w ekran po wykryciu zagrożenia</div>
+    </div>
+  );
+
+  const yardTasksForDisplay = screen === 'yard' ? [
+    { id: drawResult.item1?.id, name: drawResult.item1?.name, label: '1a' },
+    { id: drawResult.item2?.id, name: drawResult.item2?.name, label: '1b' },
+    ...YARD_TASKS_REMAINING
+  ] : ROAD_TASKS_OFFICIAL;
+
+  return (
+    <div className="flex flex-col min-h-screen bg-slate-950">
+      <header className="bg-slate-900 border-b border-slate-800 p-4 sticky top-0 z-50 flex justify-between items-center shadow-lg">
+        <div className="flex items-center gap-2">
+          <span className={`px-2 py-1 rounded text-[10px] font-black ${screen === 'yard' ? 'bg-amber-400' : 'bg-emerald-400'} text-black`}>{screen === 'yard' ? 'PLAC' : 'RUCH'}</span>
+          <h2 className="text-white font-bold text-sm truncate max-w-[120px]">{formData.name}</h2>
+        </div>
+        <div className={`px-3 py-1 rounded-full text-[10px] font-black ${verdict === 'POZYTYWNY' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'}`}>{verdict}</div>
+      </header>
+      <main className="flex-1 overflow-y-auto p-4 space-y-2 pb-32">
+        {yardTasksForDisplay.map(t => renderTaskItem(t))}
+      </main>
+      <footer className="fixed bottom-0 w-full bg-slate-900 border-t border-slate-800 p-4 flex gap-2">
+        <button onClick={() => { if(confirm('Przerwać?')) setScreen('intro'); }} className="px-4 py-4 bg-rose-500/10 text-rose-500 font-bold rounded-xl text-xs uppercase">Reset</button>
+        {screen === 'yard' ? (
+          <button onClick={() => setScreen('road')} className="flex-1 py-4 bg-emerald-400 text-black font-black rounded-xl text-sm flex items-center justify-center gap-2 uppercase">Do Ruchu <ChevronRight size={18} /></button>
+        ) : (
+          <div className="flex-1 flex flex-col gap-2">
+            <div className="bg-white rounded-xl h-24 relative overflow-hidden">
+              <canvas ref={canvasRef} className="w-full h-full cursor-crosshair touch-none" 
+                onMouseDown={(e) => { const r = canvasRef.current.getBoundingClientRect(); const ctx = canvasRef.current.getContext('2d'); ctx.beginPath(); ctx.moveTo(e.clientX-r.left, e.clientY-r.top); canvasRef.current.isDrawing = true; }}
+                onMouseMove={(e) => { if (!canvasRef.current.isDrawing) return; const r = canvasRef.current.getBoundingClientRect(); const ctx = canvasRef.current.getContext('2d'); ctx.lineTo(e.clientX-r.left, e.clientY-r.top); ctx.strokeStyle='#000'; ctx.lineWidth=2.5; ctx.stroke(); }}
+                onMouseUp={() => canvasRef.current.isDrawing = false} 
+                onTouchStart={(e) => { const r = canvasRef.current.getBoundingClientRect(); const ctx = canvasRef.current.getContext('2d'); const t = e.touches[0]; ctx.beginPath(); ctx.moveTo(t.clientX-r.left, t.clientY-r.top); canvasRef.current.isDrawing = true; }}
+                onTouchMove={(e) => { if (!canvasRef.current.isDrawing) return; const r = canvasRef.current.getBoundingClientRect(); const ctx = canvasRef.current.getContext('2d'); const t = e.touches[0]; ctx.lineTo(t.clientX-r.left, t.clientY-r.top); ctx.strokeStyle='#000'; ctx.lineWidth=2.5; ctx.stroke(); }}
+                onTouchEnd={(e) => { canvasRef.current.isDrawing = false; }}
+              />
+              <div className="absolute top-2 left-3 text-[7px] text-slate-400 uppercase font-black pointer-events-none tracking-widest">Podpis Egzaminatora</div>
+            </div>
+            <button onClick={generatePDF} className="w-full py-4 bg-emerald-400 text-black font-black rounded-xl text-sm flex items-center justify-center gap-2 uppercase shadow-lg shadow-emerald-500/20"><Printer size={18} /> Generuj PDF</button>
+          </div>
+        )}
+      </footer>
+    </div>
+  );
+}
