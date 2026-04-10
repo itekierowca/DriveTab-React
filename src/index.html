@@ -1,1 +1,357 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>DriveTab Pro — Arkusz Egzaminacyjny B</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=JetBrains+Mono:wght@700&display=swap');
+        body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+        .hidden { display: none; }
+        .canvas-container { touch-action: none; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-200 min-h-screen overflow-x-hidden">
 
+    <!-- 1. EKRAN POWITALNY -->
+    <div id="screen-intro" class="flex flex-col items-center justify-center min-h-screen p-6">
+        <div class="w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-2xl">
+            <div class="flex items-center gap-4 mb-8">
+                <div class="bg-emerald-400 p-3 rounded-xl text-black shadow-lg">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-1.1 0-2 .9-2 2v7c0 1.1.9 2 2 2h10"/><circle cx="7" cy="17" r="2"/><circle cx="15" cy="17" r="2"/></svg>
+                </div>
+                <h1 class="text-3xl font-black text-white leading-none">DriveTab <span class="text-emerald-400 italic">Pro</span></h1>
+            </div>
+
+            <div class="space-y-4 mb-8">
+                <div class="space-y-1">
+                    <label class="text-[10px] font-bold text-slate-500 uppercase tracking-[2px]">Kandydat</label>
+                    <input id="input-name" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-white outline-none focus:border-emerald-500" value="TOMASZ ZAJĄC">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="space-y-1">
+                        <label class="text-[10px] font-bold text-slate-500 uppercase tracking-[2px]">Nr PKK</label>
+                        <input id="input-pkk" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-white outline-none" value="PL/14/2024/0012348">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-[10px] font-bold text-slate-500 uppercase tracking-[2px]">PESEL</label>
+                        <input id="input-pesel" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-white outline-none" value="78112934567">
+                    </div>
+                </div>
+                <div class="space-y-1">
+                    <label class="text-[10px] font-bold text-slate-500 uppercase tracking-[2px]">Ośrodek (WORD)</label>
+                    <input id="input-word" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-white outline-none" value="WORD WARSZAWA">
+                </div>
+                <div class="space-y-1">
+                    <label class="text-[10px] font-bold text-slate-500 uppercase tracking-[2px]">Tryb Egzaminu</label>
+                    <select id="input-mode" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-white outline-none focus:border-emerald-500">
+                        <option value="hp">Urzędowy (Test HP + Plac + Ruch)</option>
+                        <option value="yard">Skrócony (Plac + Ruch)</option>
+                    </select>
+                </div>
+            </div>
+
+            <button onclick="startExam()" class="w-full bg-emerald-400 text-black font-black p-5 rounded-2xl active:scale-95 transition-all shadow-xl shadow-emerald-500/20">ROZPOCZNIJ</button>
+        </div>
+    </div>
+
+    <!-- 2. EKRAN HP -->
+    <div id="screen-hp" class="hidden flex flex-col min-h-screen bg-black items-center justify-center cursor-pointer" onclick="handleHpTap()">
+        <div id="hp-video-label" class="text-white/10 text-9xl font-black italic uppercase">Wideo 1</div>
+        <div id="hp-timer-display" class="text-emerald-500 font-mono mt-4 uppercase">Klip Egzaminacyjny... 0.0s</div>
+        <div class="absolute bottom-10 text-white/40 text-[10px] uppercase tracking-widest animate-pulse">Kliknij w ekran po wykryciu zagrożenia</div>
+    </div>
+
+    <!-- 3. EKRAN EGZAMINU -->
+    <div id="screen-exam" class="hidden flex flex-col min-h-screen">
+        <header class="bg-slate-900 border-b border-slate-800 p-4 sticky top-0 z-50 flex justify-between items-center shadow-lg">
+            <div class="flex items-center gap-2">
+                <span id="phase-badge" class="px-2 py-1 rounded text-[10px] font-black bg-amber-400 text-black uppercase">PLAC</span>
+                <h2 id="display-candidate" class="text-white font-bold text-sm truncate max-w-[150px]">...</h2>
+            </div>
+            <div id="display-verdict" class="px-3 py-1 rounded-full text-[10px] font-black bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 uppercase">Pozytywny</div>
+        </header>
+
+        <main id="tasks-container" class="flex-1 overflow-y-auto p-4 space-y-2 pb-32">
+            <!-- Dynamiczne zadania -->
+        </main>
+
+        <footer id="exam-footer" class="fixed bottom-0 w-full bg-slate-900/90 backdrop-blur-md border-t border-slate-800 p-4 flex gap-2">
+            <button onclick="window.location.reload()" class="px-4 py-4 bg-rose-500/10 text-rose-500 font-bold rounded-xl text-xs uppercase">Reset</button>
+            <button id="btn-next-phase" onclick="nextPhase()" class="flex-1 py-4 bg-emerald-400 text-black font-black rounded-xl text-sm flex items-center justify-center gap-2 uppercase">
+                Do Ruchu 
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m9 18 6-6-6-6"/></svg>
+            </button>
+        </footer>
+    </div>
+
+    <!-- 4. EKRAN WYNIKU -->
+    <div id="screen-result" class="hidden flex flex-col min-h-screen p-6 overflow-y-auto">
+        <div class="text-center py-10">
+            <h1 id="final-verdict" class="text-7xl font-black text-emerald-400 uppercase tracking-tighter">POZYTYWNY</h1>
+            <p class="text-slate-500 font-mono tracking-[4px] text-[10px] mt-2 uppercase">Egzamin Zakończony</p>
+        </div>
+
+        <div class="bg-white rounded-[32px] p-8 h-56 relative overflow-hidden shadow-2xl mb-8 canvas-container">
+            <canvas id="sig-canvas" class="w-full h-full cursor-crosshair"></canvas>
+            <div class="absolute top-6 left-8 text-[9px] text-slate-400 uppercase font-black tracking-widest pointer-events-none">Podpis Egzaminatora</div>
+            <button onclick="clearCanvas()" class="absolute bottom-6 right-8 text-[10px] text-rose-500 font-bold uppercase">Wyczyść</button>
+        </div>
+
+        <div class="grid gap-3">
+            <button onclick="generatePDF()" class="bg-emerald-400 text-black font-black p-5 rounded-2xl flex items-center justify-center gap-2 active:scale-95 shadow-xl">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z"/></svg>
+                EKSPORTUJ ARKUSZ PDF
+            </button>
+            <button onclick="window.location.reload()" class="bg-slate-800 text-white font-bold p-5 rounded-2xl active:scale-95">NOWY EGZAMIN</button>
+        </div>
+    </div>
+
+    <script>
+        // --- KONFIGURACJA ---
+        const PREP_1 = ["Poziom oleju silnikowego", "Poziom płynu chłodzącego", "Poziom płynu hamulcowego", "Obecność płynu w spryskiwaczach", "Działanie sygnału dźwiękowego"];
+        const PREP_2 = ["Światła pozycyjne", "Światła mijania", "Światła drogowe", "Światła kierunkowskazów", "Światła STOP", "Światła cofania", "Światła awaryjne", "Światła przeciwmgłowe tylne"];
+        
+        const ROAD_TASKS = [
+            "Włączanie się do ruchu", "Drogi 2-kierunkowe jednojezdniowe", "Drogi 2-kierunkowe dwujezdniowe", "Drogi jednokierunkowe",
+            "Skrzyżowania równorzędne", "Znaki pierwszeństwa", "Sygnalizacja świetlna", "Ruch wokół wyspy (rondo)", "Skrzyżowania dwupoziomowe", "Przejścia dla pieszych",
+            "Parkowanie skośne (wjazd przód - wyjazd tył)", "Parkowanie prostopadłe (wjazd tył - wyjazd przód)", "Parkowanie równoległe", "Zawracanie", "Torowiska", "Przejazd przez tunel",
+            "Przystanki", "Wyprzedzanie", "Omijanie", "Wymijanie", "Zmiana pasa ruchu", "Zmiana kierunku w prawo", "Zmiana kierunku w lewo",
+            "Zawracanie na skrzyżowaniu", "Hamowanie do zatrzymania we wskazanym miejscu", "Hamowanie awaryjne", "Rozprzęganie", "Energooszczędna zmiana biegów", 
+            "Hamowanie silnikiem", "Prędkość dopuszczalna", "Znaki poziome", "Znaki pionowe", "Sygnały świetlne", "Polecenia", "Inni uczestnicy ruchu", "Zasady techniki kierowania"
+        ];
+
+        let state = {
+            candidate: '', pkk: '', pesel: '', word: '', examiner: 'RAFAŁ MATUSZEWSKI',
+            hpResults: [], currentIndex: 0, 
+            scores: {}, 
+            draw: { item1: '', item2: '' },
+            phase: 'yard', includeHp: true
+        };
+
+        // --- NAWIGACJA ---
+        function showScreen(id) {
+            document.querySelectorAll('[id^="screen-"]').forEach(s => s.classList.add('hidden'));
+            document.getElementById('screen-' + id).classList.remove('hidden');
+            window.scrollTo(0,0);
+        }
+
+        // --- START EGZAMINU ---
+        function startExam() {
+            state.candidate = document.getElementById('input-name').value;
+            state.pkk = document.getElementById('input-pkk').value;
+            state.pesel = document.getElementById('input-pesel').value;
+            state.word = document.getElementById('input-word').value;
+            state.includeHp = document.getElementById('input-mode').value === 'hp';
+            
+            state.draw.item1 = PREP_1[Math.floor(Math.random() * PREP_1.length)];
+            state.draw.item2 = PREP_2[Math.floor(Math.random() * PREP_2.length)];
+            
+            document.getElementById('display-candidate').innerText = state.candidate;
+            
+            if (state.includeHp) {
+                showScreen('hp');
+                runHpSimulation();
+            } else {
+                renderExam();
+                showScreen('exam');
+            }
+        }
+
+        // --- TEST HP ---
+        function runHpSimulation() {
+            let time = 0;
+            let currentBest = 0;
+            const timer = setInterval(() => {
+                time += 0.1;
+                document.getElementById('hp-timer-display').innerText = `Analiza Zagrożeń... ${time.toFixed(1)}s`;
+                document.getElementById('hp-video-label').innerText = `Wideo ${state.currentIndex + 1}`;
+                
+                if (time >= 5) {
+                    clearInterval(timer);
+                    state.hpResults.push(currentBest);
+                    state.currentIndex++;
+                    if (state.currentIndex < 5) runHpSimulation();
+                    else { renderExam(); showScreen('exam'); }
+                }
+            }, 100);
+            window.handleHpTap = () => { currentBest = 5; };
+        }
+
+        // --- LISTA ZADAŃ ---
+        function renderExam() {
+            const container = document.getElementById('tasks-container');
+            container.innerHTML = '';
+            
+            let tasks = [];
+            if (state.phase === 'yard') {
+                tasks = [
+                    { id: 'prep1', name: state.draw.item1, label: '1a' },
+                    { id: 'prep2', name: state.draw.item2, label: '1b' },
+                    { id: 'prep3', name: 'Przygotowanie (fotele, lustra, pasy)', label: '1c' },
+                    { id: 'y2', name: 'Ruszanie z miejsca oraz łuk', label: '2' },
+                    { id: 'y6', name: 'Ruszanie na wzniesieniu', label: '6' }
+                ];
+            } else {
+                tasks = ROAD_TASKS.map((name, i) => ({ id: 'r'+i, name, label: i+1 }));
+            }
+
+            tasks.forEach(t => {
+                const s = state.scores[t.id] || { e: 0, p: false };
+                const div = document.createElement('div');
+                div.className = `p-3 rounded-xl border flex items-center gap-3 transition-all ${s.e >= 2 ? 'bg-rose-500/10 border-rose-500/50' : s.p ? 'bg-emerald-500/10 border-emerald-500/50' : 'bg-slate-900 border-slate-800'}`;
+                
+                div.innerHTML = `
+                    <div class="w-8 h-8 rounded-lg flex items-center justify-center font-bold ${s.e > 0 ? 'bg-rose-500 text-white' : s.p ? 'bg-emerald-500 text-black' : 'bg-slate-800 text-slate-500'}">
+                        ${s.e > 0 ? s.e : s.p ? '✓' : '-'}
+                    </div>
+                    <div class="flex-1 cursor-pointer" onclick="toggleTask('${t.id}')">
+                        <h4 class="text-xs font-bold ${t.id.startsWith('prep') ? 'text-emerald-400' : 'text-slate-200'}">${t.label}. ${t.name}</h4>
+                    </div>
+                    <div class="flex gap-1">
+                        <button onclick="updateScore('${t.id}', -1)" class="w-9 h-9 bg-slate-800 rounded-lg active:scale-90">-</button>
+                        <button onclick="updateScore('${t.id}', 1)" class="w-9 h-9 bg-slate-800 rounded-lg active:scale-90">+</button>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function toggleTask(id) {
+            if (!state.scores[id]) state.scores[id] = { e: 0, p: false };
+            if (state.scores[id].e === 0) state.scores[id].p = !state.scores[id].p;
+            checkVerdict();
+            renderExam();
+        }
+
+        function updateScore(id, delta) {
+            if (!state.scores[id]) state.scores[id] = { e: 0, p: false };
+            state.scores[id].e = Math.max(0, state.scores[id].e + delta);
+            if (state.scores[id].e > 0) state.scores[id].p = false;
+            checkVerdict();
+            renderExam();
+        }
+
+        function checkVerdict() {
+            const isNeg = Object.values(state.scores).some(s => s.e >= 2);
+            const status = isNeg ? 'NEGATYWNY' : 'POZYTYWNY';
+            document.getElementById('display-verdict').innerText = status;
+            document.getElementById('display-verdict').className = isNeg ? 'px-3 py-1 rounded-full text-[10px] font-black bg-rose-500/10 text-rose-400 border border-rose-500/30' : 'px-3 py-1 rounded-full text-[10px] font-black bg-emerald-500/10 text-emerald-400 border border-emerald-500/30';
+            document.getElementById('final-verdict').innerText = status;
+            document.getElementById('final-verdict').className = isNeg ? 'text-7xl font-black text-rose-500 uppercase' : 'text-7xl font-black text-emerald-400 uppercase';
+        }
+
+        function nextPhase() {
+            if (state.phase === 'yard') {
+                state.phase = 'road';
+                document.getElementById('phase-badge').innerText = 'RUCH';
+                document.getElementById('phase-badge').className = 'px-2 py-1 rounded text-[10px] font-black bg-emerald-400 text-black uppercase';
+                document.getElementById('btn-next-phase').innerHTML = 'ZAKOŃCZ EGZAMIN <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m9 18 6-6-6-6"/></svg>';
+                renderExam();
+            } else {
+                showScreen('result');
+                initCanvas();
+            }
+        }
+
+        // --- PODPIS ---
+        let canvas, ctx, drawing = false;
+        function initCanvas() {
+            canvas = document.getElementById('sig-canvas');
+            ctx = canvas.getContext('2d');
+            const r = canvas.getBoundingClientRect();
+            canvas.width = r.width; canvas.height = r.height;
+            ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.strokeStyle = '#000';
+            
+            const getPos = (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const clientX = e.clientX || e.touches[0].clientX;
+                const clientY = e.clientY || e.touches[0].clientY;
+                return { x: clientX - rect.left, y: clientY - rect.top };
+            };
+            const start = (e) => { drawing = true; ctx.beginPath(); const p = getPos(e); ctx.moveTo(p.x, p.y); };
+            const move = (e) => { if(!drawing) return; const p = getPos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); };
+            canvas.onmousedown = start; canvas.onmousemove = move; window.onmouseup = () => drawing = false;
+            canvas.ontouchstart = (e) => { e.preventDefault(); start(e); }; canvas.ontouchmove = (e) => { e.preventDefault(); move(e); }; canvas.ontouchend = () => drawing = false;
+        }
+        function clearCanvas() { ctx.clearRect(0,0,canvas.width,canvas.height); }
+
+        // --- GENERATOR PDF ---
+        function generatePDF() {
+            const sig = canvas.toDataURL();
+            const hpSum = state.hpResults.reduce((a,b)=>a+b, 0) || 0;
+            const isPos = document.getElementById('final-verdict').innerText === 'POZYTYWNY';
+            
+            // "Hand-drawn" SVG Paths
+            const handX = `<svg viewBox="0 0 14 14" width="16" height="16" style="display:inline;"><path d="M2 2 L12 12 M12 2 L2 12" stroke="#c0392b" stroke-width="3.5" stroke-linecap="round" fill="none"/></svg>`;
+            const handCheck = `<svg viewBox="0 0 14 14" width="20" height="20" style="display:inline; margin-top:-4px;"><path d="M2 7 L5 11 L12 2" stroke="#1a6b3a" stroke-width="4" stroke-linecap="round" fill="none"/></svg>`;
+
+            const getOfficialCell = (ids) => {
+                if(!Array.isArray(ids)) ids = [ids];
+                let e1 = false, e2 = false, p = true;
+                ids.forEach(id => {
+                    const s = state.scores[id] || {e:0, p:false};
+                    if(s.e >= 1) e1 = true;
+                    if(s.e >= 2) e2 = true;
+                    if(!s.p && s.e === 0) p = false;
+                });
+                
+                const box = "display:inline-flex; align-items:center; justify-content:center; width:13px; height:13px; border:0.5pt solid #000; background:#fff; margin-left:2px;";
+                return `<div style="display:flex; align-items:center; justify-content:center;">
+                    <span style="font-size:8.5pt; font-weight:bold;">1</span><div style="${box}">${e1 ? handX : ''}</div>
+                    <span style="font-size:8.5pt; font-weight:bold; margin-left:5px;">2</span><div style="${box}">${e2 ? handX : ''}</div>
+                    <div style="${box} margin-left:9px; width:16px; height:16px;">${p ? handCheck : ''}</div>
+                </div>`;
+            };
+
+            const html = `<html><head><meta charset="UTF-8"><style>
+                @page { size: A4; margin: 0; }
+                body { font-family: Arial; font-size: 8.5pt; margin: 8mm; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                table { width: 100%; border-collapse: collapse; }
+                td { border: 0.6pt solid #000; padding: 4px; vertical-align: top; }
+                .col-hdr { background: #e0e0e0 !important; font-weight: bold; text-align: center; border: 0.6pt solid #000; }
+                .title { text-align: center; font-weight: bold; font-size: 11pt; padding: 10px 0; border-top: 2pt solid #000; margin: 5px 0; }
+                .result-box { border: 3pt solid ${isPos?'#1a6b3a':'#c0392b'}; color: ${isPos?'#1a6b3a':'#c0392b'}; padding: 10px 30px; font-size: 24pt; font-weight: 900; display: inline-block; margin-top: 10px; }
+            </style></head><body>
+                <table>
+                    <tr><td style="width:55%">Osoba egzaminowana:<br><strong>${state.candidate} ${state.pesel}</strong></td><td>Data / Godz:<br><strong>${new Date().toLocaleDateString()} / ${new Date().toLocaleTimeString()}</strong></td><td style="text-align:center; width:10%">Kat:<br><strong style="font-size:12pt">B</strong></td></tr>
+                    <tr><td>Godzina rozp / zak:<br><strong>${new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})} / ...</strong></td><td>Ośrodek:<br><strong>${state.word}</strong></td><td>Zestaw:<br><strong>—</strong></td></tr>
+                </table>
+                <div class="title">ARKUSZ PRZEBIEGU CZĘŚCI PRAKTYCZNEJ EGZAMINU</div>
+                <div style="display:flex">
+                    <div style="flex:1; border-right: 0.5pt solid #000">
+                        <table>
+                            <tr class="col-hdr"><td style="width:24px">Poz.</td><td>Plac manewrowy / ruch drogowy</td><td style="width:105px">Ocena<br><span style="font-size:7pt; font-weight:normal">N-neg. P-poz.</span></td></tr>
+                            <tr><td>1</td><td>Przygotowanie do jazdy</td><td>${getOfficialCell(['prep1','prep2','prep3'])}</td></tr>
+                            <tr><td>2</td><td>Ruszanie z miejsca oraz łuk</td><td>${getOfficialCell('y2')}</td></tr>
+                            <tr><td>6</td><td>Ruszanie na wzniesieniu</td><td>${getOfficialCell('y6')}</td></tr>
+                            <tr class="col-hdr"><td colspan="3" style="text-align:left; padding-left:10px">Ruch drogowy</td></tr>
+                            ${ROAD_TASKS.slice(0,12).map((n, i) => `<tr><td>${i+1}</td><td>${n}</td><td>${getOfficialCell('r'+i)}</td></tr>`).join('')}
+                        </table>
+                    </div>
+                    <div style="flex:1">
+                        <table>
+                            <tr class="col-hdr"><td style="width:24px">Poz.</td><td>Ruch drogowy</td><td style="width:105px">Ocena<br><span style="font-size:7pt; font-weight:normal">N-neg. P-poz.</span></td></tr>
+                            ${ROAD_TASKS.slice(12).map((n, i) => `<tr><td>${i+13}</td><td>${n}</td><td>${getOfficialCell('r'+(i+12))}</td></tr>`).join('')}
+                        </table>
+                    </div>
+                </div>
+                <p style="background:#f5f5f5; padding:5px; border:0.5pt solid #000; font-weight:bold">TEST HP (diagnostyczny): ${state.includeHp ? hpSum : '—'}/30 pkt — nie wpływa na wynik</p>
+                <div style="display:flex; justify-content:space-between; margin-top:10px">
+                    <div style="flex:1"><strong>Uwagi:</strong><br><small>Wylosowano: 1. ${state.draw.item1}, 2. ${state.draw.item2}</small><br><div class="result-box">${isPos?'POZYTYWNY':'NEGATYWNY'}</div></div>
+                    <div style="text-align:center; width:220px; border-top:1pt solid #000; padding-top:40px; margin-top:40px">
+                        <img src="${sig}" style="height:60px; position:absolute; margin-top:-70px; margin-left:-50px"/>
+                        <small>(podpis i pieczęć egzaminatora)</small>
+                    </div>
+                </div>
+            </body></html>`;
+
+            const win = window.open('', '_blank');
+            win.document.write(html);
+            win.document.close();
+            setTimeout(() => win.print(), 600);
+        }
+    </script>
+</body>
+</html>
